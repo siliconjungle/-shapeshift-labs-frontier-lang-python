@@ -15,6 +15,7 @@ const ast = toPythonAst(document);
 assert.equal(ast.kind, 'python.module');
 assert.equal(ast.declarations.some((declaration) => declaration.kind === 'dataclass' && declaration.name === 'Todo'), true);
 assert.equal(ast.declarations.some((declaration) => declaration.kind === 'capabilityDescriptor' && declaration.name === 'HTTP_REQUEST_CAPABILITY'), true);
+assert.equal(ast.declarations.find((declaration) => declaration.kind === 'dataclass' && declaration.name === 'Todo').sourceRef.semanticNodeId, 'entity_todo');
 assert.equal(renderPythonAst(ast), out);
 assert.match(out, /class TodoInput/);
 assert.match(out, /HTTP_REQUEST_CAPABILITY/);
