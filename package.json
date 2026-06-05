@@ -1,6 +1,6 @@
 {
   "name": "@shapeshift-labs/frontier-lang-python",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Python projection adapter for Frontier Lang semantic source documents.",
   "type": "module",
   "main": "./dist/index.js",
