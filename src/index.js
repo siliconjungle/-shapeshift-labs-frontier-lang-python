@@ -74,6 +74,7 @@ export function toPythonAst(document, options = {}) {
       },
       sourceRef: sourceRef(node)
     });
+    if (node.kind === 'effect') declarations.push(effectDescriptorItem(node), effectRunnerItem(node));
   }
   for (const node of Object.values(document.nodes)) {
     if (node.kind === 'action') {
@@ -147,6 +148,38 @@ function stateItem(node) {
   };
 }
 
+function effectDescriptorItem(node) {
+  return {
+    kind: 'effectDescriptor',
+    name: `${pyConstIdentifier(node.name)}_EFFECT`,
+    value: {
+      name: node.name,
+      capability: node.capability,
+      input: node.input,
+      returns: node.returns,
+      resources: node.resources ?? [],
+      semantics: node.semantics
+    },
+    sourceRef: sourceRef(node)
+  };
+}
+
+function effectRunnerItem(node) {
+  return {
+    kind: 'effectRunner',
+    name: `run_${pyIdentifier(node.name)}_effect`,
+    inputType: pyType(node.input ?? 'Json'),
+    returnType: pyType(node.returns ?? 'Json'),
+    value: {
+      name: node.name,
+      capability: node.capability,
+      resources: node.resources ?? [],
+      semantics: node.semantics
+    },
+    sourceRef: sourceRef(node)
+  };
+}
+
 function firstStateType(document) {
   const state = Object.values(document.nodes).find((node) => node.kind === 'state');
   return state ? `${pyIdentifier(state.name)}State` : 'Any';
@@ -172,6 +205,13 @@ function renderMappedPythonDeclaration(lines, mappings, declaration, index, targ
 function renderPythonDeclaration(lines, declaration) {
   if (declaration.kind === 'dataclass') renderDataclass(lines, declaration);
   if (declaration.kind === 'capabilityDescriptor') lines.push(`${declaration.name}: Mapping[str, Any] = ${pyLiteral(declaration.value)}`, '');
+  if (declaration.kind === 'effectDescriptor') lines.push(`${declaration.name}: Mapping[str, Any] = ${pyLiteral(declaration.value)}`, '');
+  if (declaration.kind === 'effectRunner') {
+    lines.push(`def ${declaration.name}(input: ${declaration.inputType}, env: Mapping[str, Any]) -> ${declaration.returnType}:`);
+    lines.push('    invoke = env["invoke"]');
+    lines.push(`    return invoke(${pyLiteral(declaration.value.capability)}, input, ${pyLiteral({ effect: declaration.value.name, resources: declaration.value.resources, semantics: declaration.value.semantics ?? null })})`);
+    lines.push('');
+  }
   if (declaration.kind === 'function') {
     lines.push(`def ${declaration.name}(state: ${declaration.stateType}, input: ${declaration.inputType}, env: ${declaration.envType} = None) -> ${declaration.returnType}:`);
     for (const statement of declaration.body) lines.push(`    ${statement}`);

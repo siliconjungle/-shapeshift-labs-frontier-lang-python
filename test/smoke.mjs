@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { actionNode, capabilityNode, createDocument, entityNode, stateNode, typeNode } from '@shapeshift-labs/frontier-lang-kernel';
+import { actionNode, capabilityNode, createDocument, effectNode, entityNode, stateNode, typeNode } from '@shapeshift-labs/frontier-lang-kernel';
 import { emitPython, emitPythonWithSourceMap, renderPythonAst, renderPythonAstWithSourceMap, toPythonAst } from '../dist/index.js';
 
 const document = createDocument({ id: 'doc', name: 'Doc', nodes: [
@@ -7,6 +7,7 @@ const document = createDocument({ id: 'doc', name: 'Doc', nodes: [
   capabilityNode({ id: 'cap_http', name: 'HttpRequest', capability: 'http.request', adapters: [
     { target: { language: 'python', platform: 'server', packageName: 'httpx' }, symbol: 'httpx.request', kind: 'library' }
   ] }),
+  effectNode({ id: 'effect_persist', name: 'PersistTodo', capability: 'storage.write', input: 'TodoInput', returns: 'Json', resources: ['TodoDb.todos'] }),
   entityNode({ id: 'entity_todo', name: 'Todo', fields: [{ id: 'tags', name: 'tags', type: { kind: 'set', item: 'Text' } }] }),
   stateNode({ id: 'state_todo', name: 'TodoDb', collections: [{ id: 'collection_todos', name: 'todos', type: { kind: 'map', key: 'Text', value: { kind: 'ref', name: 'Todo' } } }] }),
   actionNode({ id: 'action_add', name: 'add_todo', input: 'TodoInput', returns: 'Patch' })
@@ -34,8 +35,11 @@ assert.equal(ast.kind, 'python.module');
 assert.equal(ast.declarations.some((declaration) => declaration.kind === 'dataclass' && declaration.name === 'Todo'), true);
 assert.equal(ast.declarations.some((declaration) => declaration.kind === 'dataclass' && declaration.name === 'TodoDbState'), true);
 assert.equal(ast.declarations.some((declaration) => declaration.kind === 'capabilityDescriptor' && declaration.name === 'HTTP_REQUEST_CAPABILITY'), true);
+assert.equal(ast.declarations.some((declaration) => declaration.kind === 'effectDescriptor' && declaration.name === 'PERSIST_TODO_EFFECT'), true);
+assert.equal(ast.declarations.some((declaration) => declaration.kind === 'effectRunner' && declaration.name === 'run_PersistTodo_effect'), true);
 assert.equal(ast.declarations.find((declaration) => declaration.kind === 'dataclass' && declaration.name === 'Todo').sourceRef.semanticNodeId, 'entity_todo');
 assert.equal(ast.declarations.find((declaration) => declaration.kind === 'dataclass' && declaration.name === 'TodoDbState').sourceRef.semanticNodeId, 'state_todo');
+assert.equal(ast.declarations.find((declaration) => declaration.kind === 'effectDescriptor' && declaration.name === 'PERSIST_TODO_EFFECT').sourceRef.semanticNodeId, 'effect_persist');
 assert.equal(renderPythonAst(ast), out);
 assert.equal(rendered.code, out);
 assert.equal(emitted.code, out);
@@ -54,9 +58,16 @@ assert.equal(todoMapping.semanticSymbolId, 'symbol_todo');
 assert.deepEqual(todoMapping.lossIds, ['loss_collection_type']);
 assert.deepEqual(todoMapping.evidenceIds, ['evidence_projection']);
 assert.deepEqual(todoMapping.metadata.regionIds, ['tags']);
+const effectMapping = rendered.sourceMap.mappings.find((mapping) => mapping.semanticNodeId === 'effect_persist' && mapping.generatedName === 'PERSIST_TODO_EFFECT');
+assert.equal(effectMapping.generatedName, 'PERSIST_TODO_EFFECT');
 assert.match(out, /class TodoInput/);
 assert.match(out, /HTTP_REQUEST_CAPABILITY/);
 assert.match(out, /httpx\.request/);
+assert.match(out, /PERSIST_TODO_EFFECT: Mapping\[str, Any\]/);
+assert.match(out, /"capability": "storage\.write"/);
+assert.match(out, /def run_PersistTodo_effect\(input: TodoInput, env: Mapping\[str, Any\]\) -> Any:/);
+assert.match(out, /invoke = env\["invoke"\]/);
+assert.match(out, /return invoke\("storage\.write", input, \{"effect": "PersistTodo", "resources": \["TodoDb\.todos"\], "semantics": None\}\)/);
 assert.match(out, /class Todo/);
 assert.match(out, /frozenset\[str\]/);
 assert.match(out, /class TodoDbState/);
