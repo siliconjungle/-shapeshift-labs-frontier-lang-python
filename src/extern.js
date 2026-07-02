@@ -6,8 +6,8 @@ export function externDescriptorItem(node, helpers) {
       name: node.name,
       language: node.language,
       symbol: node.symbol ?? node.name,
-      input: node.input,
-      returns: node.returns,
+      input: node.input ?? node.signature?.input,
+      returns: node.returns ?? node.signature?.returns,
       effects: node.effects ?? [],
       resources: node.resources ?? []
     },
@@ -19,8 +19,8 @@ export function externRunnerItem(node, helpers) {
   return {
     kind: 'externRunner',
     name: `call_${helpers.pyIdentifier(node.name)}_extern`,
-    inputType: helpers.pyType(node.input ?? 'Json'),
-    returnType: helpers.pyType(node.returns ?? 'Json'),
+    inputType: helpers.pyType(node.input ?? node.signature?.input ?? 'Json'),
+    returnType: helpers.pyType(node.returns ?? node.signature?.returns ?? 'Json'),
     value: {
       name: node.name,
       language: node.language,

@@ -8,7 +8,7 @@ const document = createDocument({ id: 'doc', name: 'Doc', nodes: [
     { target: { language: 'python', platform: 'server', packageName: 'httpx' }, symbol: 'httpx.request', kind: 'library' }
   ] }),
   effectNode({ id: 'effect_persist', name: 'PersistTodo', capability: 'storage.write', input: 'TodoInput', returns: 'Json', resources: ['TodoDb.todos'] }),
-  externNode({ id: 'extern_persist', name: 'persistTodo', language: 'typescript', symbol: 'persistTodo', input: 'TodoInput', returns: 'Patch', effects: ['storage.write'], resources: ['TodoDb.todos'] }),
+  externNode({ id: 'extern_persist', name: 'persistTodo', language: 'typescript', symbol: 'persistTodo', signature: { input: 'TodoInput', returns: 'Patch' }, effects: ['storage.write'], resources: ['TodoDb.todos'] }),
   entityNode({ id: 'entity_todo', name: 'Todo', fields: [{ id: 'tags', name: 'tags', type: { kind: 'set', item: 'Text' } }] }),
   stateNode({ id: 'state_todo', name: 'TodoDb', collections: [{ id: 'collection_todos', name: 'todos', type: { kind: 'map', key: 'Text', value: { kind: 'ref', name: 'Todo' } } }] }),
   actionNode({ id: 'action_add', name: 'add_todo', input: 'TodoInput', returns: 'Patch' })
