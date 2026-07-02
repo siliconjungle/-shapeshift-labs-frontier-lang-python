@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { actionNode, capabilityNode, createDocument, entityNode, typeNode } from '@shapeshift-labs/frontier-lang-kernel';
+import { actionNode, capabilityNode, createDocument, entityNode, stateNode, typeNode } from '@shapeshift-labs/frontier-lang-kernel';
 import { emitPython, emitPythonWithSourceMap, renderPythonAst, renderPythonAstWithSourceMap, toPythonAst } from '../dist/index.js';
 
 const document = createDocument({ id: 'doc', name: 'Doc', nodes: [
@@ -8,6 +8,7 @@ const document = createDocument({ id: 'doc', name: 'Doc', nodes: [
     { target: { language: 'python', platform: 'server', packageName: 'httpx' }, symbol: 'httpx.request', kind: 'library' }
   ] }),
   entityNode({ id: 'entity_todo', name: 'Todo', fields: [{ id: 'tags', name: 'tags', type: { kind: 'set', item: 'Text' } }] }),
+  stateNode({ id: 'state_todo', name: 'TodoDb', collections: [{ id: 'collection_todos', name: 'todos', type: { kind: 'map', key: 'Text', value: { kind: 'ref', name: 'Todo' } } }] }),
   actionNode({ id: 'action_add', name: 'add_todo', input: 'TodoInput', returns: 'Patch' })
 ] });
 const out = emitPython(document);
@@ -31,8 +32,10 @@ const rendered = renderPythonAstWithSourceMap(ast, {
 const emitted = emitPythonWithSourceMap(document, { targetPath: 'doc.py' });
 assert.equal(ast.kind, 'python.module');
 assert.equal(ast.declarations.some((declaration) => declaration.kind === 'dataclass' && declaration.name === 'Todo'), true);
+assert.equal(ast.declarations.some((declaration) => declaration.kind === 'dataclass' && declaration.name === 'TodoDbState'), true);
 assert.equal(ast.declarations.some((declaration) => declaration.kind === 'capabilityDescriptor' && declaration.name === 'HTTP_REQUEST_CAPABILITY'), true);
 assert.equal(ast.declarations.find((declaration) => declaration.kind === 'dataclass' && declaration.name === 'Todo').sourceRef.semanticNodeId, 'entity_todo');
+assert.equal(ast.declarations.find((declaration) => declaration.kind === 'dataclass' && declaration.name === 'TodoDbState').sourceRef.semanticNodeId, 'state_todo');
 assert.equal(renderPythonAst(ast), out);
 assert.equal(rendered.code, out);
 assert.equal(emitted.code, out);
@@ -56,4 +59,7 @@ assert.match(out, /HTTP_REQUEST_CAPABILITY/);
 assert.match(out, /httpx\.request/);
 assert.match(out, /class Todo/);
 assert.match(out, /frozenset\[str\]/);
+assert.match(out, /class TodoDbState/);
+assert.match(out, /todos: Mapping\[str, Todo\]/);
+assert.match(out, /def add_todo\(state: TodoDbState, input: TodoInput/);
 assert.match(out, /def add_todo/);

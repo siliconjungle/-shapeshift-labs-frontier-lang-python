@@ -1,6 +1,6 @@
 {
   "name": "@shapeshift-labs/frontier-lang-python",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "Python projection adapter for Frontier Lang semantic source documents.",
   "type": "module",
   "main": "./dist/index.js",
@@ -43,7 +43,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/siliconjungle/-shapeshift-labs-frontier-lang-python.git"
+    "url": "git+ssh://git@github.com/siliconjungle/-shapeshift-labs-frontier-lang-python.git"
   },
   "bugs": {
     "url": "https://github.com/siliconjungle/-shapeshift-labs-frontier-lang-python/issues"
