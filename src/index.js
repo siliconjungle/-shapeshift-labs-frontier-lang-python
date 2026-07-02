@@ -1,3 +1,5 @@
+import { externDescriptorItem, externRunnerItem } from './extern.js';
+
 function pyIdentifier(name) {
   const identifier = name.replace(/[^A-Za-z0-9_]/g, '_');
   return /^[A-Za-z_]/.test(identifier) ? identifier : `_${identifier}`;
@@ -75,6 +77,10 @@ export function toPythonAst(document, options = {}) {
       sourceRef: sourceRef(node)
     });
     if (node.kind === 'effect') declarations.push(effectDescriptorItem(node), effectRunnerItem(node));
+    if (node.kind === 'extern') declarations.push(
+      externDescriptorItem(node, { pyConstIdentifier, sourceRef }),
+      externRunnerItem(node, { pyIdentifier, pyType, sourceRef })
+    );
   }
   for (const node of Object.values(document.nodes)) {
     if (node.kind === 'action') {
@@ -206,10 +212,17 @@ function renderPythonDeclaration(lines, declaration) {
   if (declaration.kind === 'dataclass') renderDataclass(lines, declaration);
   if (declaration.kind === 'capabilityDescriptor') lines.push(`${declaration.name}: Mapping[str, Any] = ${pyLiteral(declaration.value)}`, '');
   if (declaration.kind === 'effectDescriptor') lines.push(`${declaration.name}: Mapping[str, Any] = ${pyLiteral(declaration.value)}`, '');
+  if (declaration.kind === 'externDescriptor') lines.push(`${declaration.name}: Mapping[str, Any] = ${pyLiteral(declaration.value)}`, '');
   if (declaration.kind === 'effectRunner') {
     lines.push(`def ${declaration.name}(input: ${declaration.inputType}, env: Mapping[str, Any]) -> ${declaration.returnType}:`);
     lines.push('    invoke = env["invoke"]');
     lines.push(`    return invoke(${pyLiteral(declaration.value.capability)}, input, ${pyLiteral({ effect: declaration.value.name, resources: declaration.value.resources, semantics: declaration.value.semantics ?? null })})`);
+    lines.push('');
+  }
+  if (declaration.kind === 'externRunner') {
+    lines.push(`def ${declaration.name}(input: ${declaration.inputType}, env: Mapping[str, Any]) -> ${declaration.returnType}:`);
+    lines.push('    call_extern = env["callExtern"]');
+    lines.push(`    return call_extern(${pyLiteral(declaration.value.symbol)}, input, ${pyLiteral({ extern: declaration.value.name, language: declaration.value.language, effects: declaration.value.effects, resources: declaration.value.resources })})`);
     lines.push('');
   }
   if (declaration.kind === 'function') {

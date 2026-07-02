@@ -119,7 +119,21 @@ export type PythonAstDeclaration =
       readonly sourceRef?: PythonSourceRef;
     }
   | {
+      readonly kind: 'externDescriptor';
+      readonly name: string;
+      readonly value: unknown;
+      readonly sourceRef?: PythonSourceRef;
+    }
+  | {
       readonly kind: 'effectRunner';
+      readonly name: string;
+      readonly inputType: string;
+      readonly returnType: string;
+      readonly value: unknown;
+      readonly sourceRef?: PythonSourceRef;
+    }
+  | {
+      readonly kind: 'externRunner';
       readonly name: string;
       readonly inputType: string;
       readonly returnType: string;
