@@ -1,7 +1,7 @@
 import { externDescriptorItem, externRunnerItem } from './extern.js';
-
+import { pythonActionBodyStatements } from './action-body.js';
 function pyIdentifier(name) {
-  const identifier = name.replace(/[^A-Za-z0-9_]/g, '_');
+  const identifier = String(name ?? 'unknown').replace(/[^A-Za-z0-9_]/g, '_');
   return /^[A-Za-z_]/.test(identifier) ? identifier : `_${identifier}`;
 }
 
@@ -91,7 +91,7 @@ export function toPythonAst(document, options = {}) {
         inputType: pyType(node.input),
         envType: 'Mapping[str, Any] | None',
         returnType: pyType(node.returns ?? 'Patch'),
-        body: ['return []'],
+        body: pythonActionBodyStatements(node, { pyIdentifier, pyLiteral }),
         sourceRef: sourceRef(node)
       });
     }
